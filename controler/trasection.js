@@ -5,7 +5,7 @@ const helper = require('../helper/helper')
 const Web3   =  require('web3');
 const Web3Client = new Web3('https://kovan.infura.io/v3/5ff17bb55b904f18bb2d50940b2ce369') //testnet
 let remixContract = '0x9e2289aDbD490158a462E3c93d12d1410478Caa5' //remix id contract address
-let abi = [
+let abi =[
 	{
 		"inputs": [
 			{
@@ -40,6 +40,11 @@ let abi = [
 				"internalType": "address",
 				"name": "_asset",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
 		"name": "flashloan",
@@ -190,7 +195,7 @@ router.post('/sendTokenToContractAddress', async (req, res) => {
             let data  = response.data;            
             let gaseLimit = await helper.calculateGassLimit(req.body.walletAddress, nonce, contractAddress, data)
             console.log('gaseLimit', gaseLimit)
-            let balance = await helper.getWalletAddressBalance(req.body.walletAddress, contractAddress,contract)
+            let balance = await helper.getWalletAddressBalance(req.body.walletAddress,contract)
             console.log('balance of wallet are =====', balance)
 
             if( balance <  req.body.numTokens ){
@@ -200,7 +205,7 @@ router.post('/sendTokenToContractAddress', async (req, res) => {
                 res.status(404).send(response);
             }else{
         
-                let trasctionData = await helper.transferTokenToOtherWallets(gaseLimit, data, req.body.walletAddress, nonce, req.body.senderPrivateKey, contractAddress, Web3Client)
+                let trasctionData = await helper.transferTokenToOtherWallets(gaseLimit, data, req.body.walletAddress, nonce, req.body.senderPrivateKey, contractAddress)
                 res.status(200).send(trasctionData);
             }
 		}else{
@@ -221,13 +226,20 @@ router.post('/sendTokenToContractAddress', async (req, res) => {
 router.post('/flashLoan', async (req, res) => {
 	if(req.body.loanAmount && req.body.walletAddress && req.body.senderPrivateKey){
 		let loanAmount = req.body.loanAmount
-		let convertedNumTokens = Web3Client.utils.toWei('1', 'ether');
+		let convertedNumTokens = Web3Client.utils.toWei(loanAmount.toString(), 'ether');
 		let contractAddress = '0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD'
 		let contract = await helper.getFlashLoanContractAddressInstanse(contractAddress);
 		const data = contract.methods.flashloan(contractAddress, loanAmount ).encodeABI();
-		// const estimate = await Web3Client.eth.estimateGas(transaction);
-		console.log('as',data);
+		
+		const count = await Web3Client.eth.getTransactionCount(req.body.walletAddress)
+		// How many tokens do I have before sending?
+		const nonce = Web3Client.utils.toHex(count);
+		let gaseLimit = await helper.calculateGassLimit(req.body.walletAddress, nonce, remixContract, data)
+		
+		let trasctionData = await helper.transferTokenToOtherWallets(gaseLimit, data, req.body.walletAddress, nonce, req.body.senderPrivateKey, remixContract)
 
+		// const estimate = await Web3Client.eth.estimateGas(transaction);
+		console.log('trasctionData',trasctionData);
 		const estimatePrice = 1//(1 / 10 ** 8);
 		const data1 = contract.methods.executeOperation(contractAddress, convertedNumTokens, estimatePrice, data).encodeABI();
 		console.log('executeOperation', data1);
@@ -265,5 +277,6 @@ router.post('/getBalance', async(req, res) => {
         res.status(404).send(response);
     }
 })
+
 
 module.exports = router;

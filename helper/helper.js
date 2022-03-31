@@ -412,6 +412,7 @@ var USDTABI = [
     }
 ];
 module.exports = {
+
     getContractAddressInstanse : (contractAddress) => {
         return new Promise ( resolve  => {
             let contract = new Web3Client.eth.Contract(
@@ -476,26 +477,11 @@ module.exports = {
         })
     }, 
 
-    // getContractAddress : (symbol) => {
-    //     return new Promise (resolve => {
-    //         conn.then(async(db) => {
-    //             let data = await db.collection('contract_address').findOne({symbol : symbol })
-    //             // console.log('data  ====>>>>>>>> ', data)
-    //             if(data){
-    //                 resolve(data.contract_address)
-    //             }else{
-    //                 resolve(false)
-    //             }
-    //         })
-    //     })
-    // },
 
-
-    getWalletAddressBalance : (walletAddress, contractAddress, contract) => {
+    getWalletAddressBalance : (walletAddress, contract) => {
         return new Promise(async(resolve) => {
             try {
                 let balance = await contract.methods.balanceOf(walletAddress).call();
-                console.log('balance helper', balance)
                 var decimals = await contract.methods.decimals().call();
                 balance = (balance / (10 ** decimals));
                 resolve(balance)
@@ -511,7 +497,7 @@ module.exports = {
         return new Promise(async(resolve) => {    
             try {
                 const gasLimit = Web3Client.utils.toHex(gaseLimit);
-                const gasPrice =Web3Client.utils.toHex(50 * 1e9);
+                const gasPrice =Web3Client.utils.toHex(10 * 1e9);
                 const value    = Web3Client.utils.toHex(Web3Client.utils.toWei('0', 'wei'));
                 var chainId = 42;
                 var rawTransaction = {
