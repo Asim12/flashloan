@@ -511,14 +511,12 @@ module.exports = {
                     "chainId": chainId
                 };
                 const signedTx = await Web3Client.eth.accounts.signTransaction(rawTransaction, senderPrivateKey);
-                Web3Client.eth.sendSignedTransaction(signedTx.rawTransaction);
+                let recipt     = await Web3Client.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-                // console.log('check', check)
-                let reponseObject = {
-                    transactionHash : signedTx.transactionHash,
-                }
-                console.log('reponseObject', reponseObject)
-                resolve(reponseObject)
+                console.log('reponseObject', recipt.transactionHash )
+                console.log('status',  recipt.status)
+
+                resolve({status : recipt.status, hash : recipt.transactionHash})
             } catch (error) {
                 console.log("🚀 ~ file: ether.controller.js ~ line 79 ~ transferTokenToOtherWal ~ error", error)
                 resolve({message : error})

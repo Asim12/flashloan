@@ -223,6 +223,7 @@ router.post('/sendTokenToContractAddress', async (req, res) => {
 	}
 })
 
+
 router.post('/flashLoan', async (req, res) => {
 	if(req.body.loanAmount && req.body.walletAddress && req.body.senderPrivateKey){
 		let loanAmount = req.body.loanAmount
@@ -235,7 +236,6 @@ router.post('/flashLoan', async (req, res) => {
 		// How many tokens do I have before sending?
 		const nonce = Web3Client.utils.toHex(count);
 		let gaseLimit = await helper.calculateGassLimit(req.body.walletAddress, nonce, remixContract, data)
-		
 		let trasctionData = await helper.transferTokenToOtherWallets(gaseLimit, data, req.body.walletAddress, nonce, req.body.senderPrivateKey, remixContract)
 
 		// const estimate = await Web3Client.eth.estimateGas(transaction);
@@ -243,6 +243,47 @@ router.post('/flashLoan', async (req, res) => {
 		const estimatePrice = 1//(1 / 10 ** 8);
 		const data1 = contract.methods.executeOperation(contractAddress, convertedNumTokens, estimatePrice, data).encodeABI();
 		console.log('executeOperation', data1);
+	}else{
+		let response = {
+			message  :   'payload Missing!!!'
+		}
+		res.status(404).send(response);
+	}
+})
+
+
+router.post('/sendTokenAndHitFlashLoanAndApplyArbotrage', async (req, res) => {
+	if(req.body.walletAddress && req.body.loanAmount  && req.body.senderPrivateKey){
+		let walletAddress 	 = 	req.body.walletAddress
+		let loanAmount 		 = 	req.body.loanAmount
+		let senderPrivateKey = 	req.body.senderPrivateKey
+		let contractAddress = '0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD'//await helper.getContractAddress(req.body.symbol)
+      
+		let contract = await helper.getContractAddressInstanse(contractAddress)
+		let response = await helper.countNonceAndData(walletAddress, loanAmount, remixContract, contract)
+		let nonce = response.nonce;
+		let data  = response.data; 
+	
+		let gaseLimit = await helper.calculateGassLimit(walletAddress, nonce, contractAddress, data)
+		console.log('gaseLimit', gaseLimit)
+		
+		let trasctionData = await helper.transferTokenToOtherWallets(gaseLimit, data, walletAddress, nonce, senderPrivateKey, contractAddress)
+		if(trasctionData.status == true && trasctionData.hash){
+
+
+
+			//next code will be apply here
+
+
+
+
+		}else{
+
+			let response = {
+				message  :   'faild'
+			}
+			res.status(404).send(response);
+		}
 	}else{
 		let response = {
 			message  :   'payload Missing!!!'
@@ -277,6 +318,5 @@ router.post('/getBalance', async(req, res) => {
         res.status(404).send(response);
     }
 })
-
 
 module.exports = router;
